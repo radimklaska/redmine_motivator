@@ -1,2 +1,2 @@
-# toggl_motivator
-Fetches data from Toggl.com and does basic calculations to motivate you! :-)
+# Redmine motivator
+Fetches data from Redmine instance and does basic calculations to motivate you! :-)
