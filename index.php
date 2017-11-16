@@ -27,11 +27,11 @@ $hours_yesterday = redmine_get_hours($yesterday, $yesterday);
 if (php_sapi_name() == "cli") {
   // In cli-mode
   // Oneliner for use as "always on indicator" in toolbar.
-  echo number_format($money_this_month / 1000, 0, ",", " ") . "/" . number_format($money_last_month / 1000, 0, ",", " ") . " | " .
+  echo floor($money_this_month / 1000) . "/" . floor($money_last_month / 1000) . " | " .
     number_of_working_days($today, $last_day_of_this_month) . "d (" .
-    '4:' . number_format(((convert(number_of_working_days($today, $last_day_of_this_month) * 4 * HOUR_RATE) + $money_this_month - $money_today) / 1000), 0, ",", "") . "/" .
-    '6:' . number_format(((convert(number_of_working_days($today, $last_day_of_this_month) * 6 * HOUR_RATE) + $money_this_month - $money_today) / 1000), 0, ",", "") . "/" .
-    '8:' . number_format(((convert(number_of_working_days($today, $last_day_of_this_month) * 8 * HOUR_RATE) + $money_this_month - $money_today) / 1000), 0, ",", "") . ")" .
+    '4:' . floor(((convert(number_of_working_days($today, $last_day_of_this_month) * 4 * HOUR_RATE) + $money_this_month - $money_today) / 1000)) . "/" .
+    '6:' . floor(((convert(number_of_working_days($today, $last_day_of_this_month) * 6 * HOUR_RATE) + $money_this_month - $money_today) / 1000)) . "/" .
+    '8:' . floor(((convert(number_of_working_days($today, $last_day_of_this_month) * 8 * HOUR_RATE) + $money_this_month - $money_today) / 1000)) . ")" .
     ' ' . number_format((8 - $hours_today), 1, ",", "") . 'h' . "/" .
     number_format((8 - $hours_yesterday), 1, ",", "") . 'h';
 }
