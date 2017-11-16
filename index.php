@@ -6,83 +6,116 @@ if (file_exists($config)) {
 }
 
 // Quick check.
-if (!defined("TOGGL_TOKEN")) {
+if (!defined("REDMINE_API_KEY")) {
   die("No config!\n");
 }
 
-$l_first = date("Y-m-d", strtotime("first day of last month"));
-$l_last = date("Y-m-d", strtotime("last day of last month"));
-$c_first = date("Y-m-d", strtotime("first day of this month"));
-$c_last = date("Y-m-d", strtotime("last day of this month"));
+$first_day_of_last_month = date("Y-m-d", strtotime("first day of last month"));
+$last_day_of_last_month = date("Y-m-d", strtotime("last day of last month"));
+$first_day_of_this_month = date("Y-m-d", strtotime("first day of this month"));
+$last_day_of_this_month = date("Y-m-d", strtotime("last day of this month"));
 $yesterday = date("Y-m-d", strtotime("yesterday"));
 $today = date("Y-m-d", strtotime("today"));
 $tomorrow = date("Y-m-d", strtotime("tomorrow"));
 
-$tm_cf_cl = toggl_m($c_first, $c_last);
-sleep(1);
-$tm_lf_ll = toggl_m($l_first, $l_last);
-sleep(1);
-$tm_t_t = toggl_m($today, $today);
-sleep(1);
-$th_t_t = toggl_h($today, $today);
-sleep(1);
-$th_y_y = toggl_h($yesterday, $yesterday);
+$money_this_month = redmine_get_money($first_day_of_this_month, $last_day_of_this_month);
+$money_last_month = redmine_get_money($first_day_of_last_month, $last_day_of_last_month);
+$money_today = redmine_get_money($today, $today);
+$hours_today = redmine_get_hours($today, $today);
+$hours_yesterday = redmine_get_hours($yesterday, $yesterday);
 
 if (php_sapi_name() == "cli") {
   // In cli-mode
   // Oneliner for use as "always on indicator" in toolbar.
-  echo number_format($tm_cf_cl / 1000, 0, ",", " ") . "/" . number_format($tm_lf_ll / 1000, 0, ",", " ") . " | " .
-    number_of_working_days($today, $c_last) . "d (" .
-    '4:' . number_format(((convert(number_of_working_days($today, $c_last) * 4 * HOUR_RATE) + $tm_cf_cl - $tm_t_t) / 1000), 0, ",", "") . "/" .
-    '6:' . number_format(((convert(number_of_working_days($today, $c_last) * 6 * HOUR_RATE) + $tm_cf_cl - $tm_t_t) / 1000), 0, ",", "") . "/" .
-    '8:' . number_format(((convert(number_of_working_days($today, $c_last) * 8 * HOUR_RATE) + $tm_cf_cl - $tm_t_t) / 1000), 0, ",", "") . ")" .
-    ' ' . number_format((8 - $th_t_t), 1, ",", "") . 'h' . "/" .
-    number_format((8 - $th_y_y), 1, ",", "") . 'h';
+  echo number_format($money_this_month / 1000, 0, ",", " ") . "/" . number_format($money_last_month / 1000, 0, ",", " ") . " | " .
+    number_of_working_days($today, $last_day_of_this_month) . "d (" .
+    '4:' . number_format(((convert(number_of_working_days($today, $last_day_of_this_month) * 4 * HOUR_RATE) + $money_this_month - $money_today) / 1000), 0, ",", "") . "/" .
+    '6:' . number_format(((convert(number_of_working_days($today, $last_day_of_this_month) * 6 * HOUR_RATE) + $money_this_month - $money_today) / 1000), 0, ",", "") . "/" .
+    '8:' . number_format(((convert(number_of_working_days($today, $last_day_of_this_month) * 8 * HOUR_RATE) + $money_this_month - $money_today) / 1000), 0, ",", "") . ")" .
+    ' ' . number_format((8 - $hours_today), 1, ",", "") . 'h' . "/" .
+    number_format((8 - $hours_yesterday), 1, ",", "") . 'h';
 }
 else {
   // Output with descriptions:
-  echo 'Vydelano tento mesic: <b>' . number_format($tm_cf_cl, 0, ",", " ") . " " . FINAL_CURRENCY . "</b><br>" .
-    'Vydelano minuly mesic: <b>' . number_format($tm_lf_ll, 0, ",", " ") . " " . FINAL_CURRENCY . "</b><br>" .
-    'Zbyvajici pracovni dny: <b>' . number_of_working_days($today, $c_last) . "</b><br>" .
-    'Na konci mesice pri tempu 4h/den: <b>' . number_format((convert(number_of_working_days($today, $c_last) * 4 * HOUR_RATE) + $tm_cf_cl - $tm_t_t), 0, ",", " ") . " " . FINAL_CURRENCY . "</b><br>" .
-    'Na konci mesice pri tempu 6h/den: <b>' . number_format((convert(number_of_working_days($today, $c_last) * 6 * HOUR_RATE) + $tm_cf_cl - $tm_t_t), 0, ",", " ") . " " . FINAL_CURRENCY . "</b><br>" .
-    'Na konci mesice pri tempu 8h/den: <b>' . number_format((convert(number_of_working_days($today, $c_last) * 8 * HOUR_RATE) + $tm_cf_cl - $tm_t_t), 0, ",", " ") . " " . FINAL_CURRENCY . "</b><br>" .
-    'Do dnesniho cile zbyva: <b>' . number_format((8 - $th_t_t), 1, ",", "") . 'h' . "</b><br>" .
-    'Do vcerejsiho cile zbyva: <b>' . number_format((8 - $th_y_y), 1, ",", "") . 'h' . "</b><br>";
+  echo 'Vydelano tento mesic: <b>' . number_format($money_this_month, 0, ",", " ") . " " . FINAL_CURRENCY . "</b><br>" .
+    'Vydelano minuly mesic: <b>' . number_format($money_last_month, 0, ",", " ") . " " . FINAL_CURRENCY . "</b><br>" .
+    'Zbyvajici pracovni dny: <b>' . number_of_working_days($today, $last_day_of_this_month) . "</b><br>" .
+    'Na konci mesice pri tempu 4h/den: <b>' . number_format((convert(number_of_working_days($today, $last_day_of_this_month) * 4 * HOUR_RATE) + $money_this_month - $money_today), 0, ",", " ") . " " . FINAL_CURRENCY . "</b><br>" .
+    'Na konci mesice pri tempu 6h/den: <b>' . number_format((convert(number_of_working_days($today, $last_day_of_this_month) * 6 * HOUR_RATE) + $money_this_month - $money_today), 0, ",", " ") . " " . FINAL_CURRENCY . "</b><br>" .
+    'Na konci mesice pri tempu 8h/den: <b>' . number_format((convert(number_of_working_days($today, $last_day_of_this_month) * 8 * HOUR_RATE) + $money_this_month - $money_today), 0, ",", " ") . " " . FINAL_CURRENCY . "</b><br>" .
+    'Do dnesniho cile zbyva: <b>' . number_format((8 - $hours_today), 1, ",", "") . 'h' . "</b><br>" .
+    'Do vcerejsiho cile zbyva: <b>' . number_format((8 - $hours_yesterday), 1, ",", "") . 'h' . "</b><br>";
 }
 
-function toggl_h($first, $last) {
-  $url = "https://www.toggl.com/reports/api/v2/summary?workspace_id=" . TOGGL_WORKSPACE_ID . "&user_ids=" . TOGGL_USER_ID . "&since={$first}&until={$last}&user_agent=" . TOGGL_AGENT . "&api_token=" . TOGGL_TOKEN;
+function redmine_get_hours($start, $end) {
+  $pager = 100; // no more than 100, redmine forces 100 if you try more.
+  $result = redmine_get_time_entries($start, $end, $pager);
 
-  $curl = curl_init();
-  curl_setopt($curl, CURLOPT_URL, $url);
-  curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
-  curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 2);
-  curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-  curl_setopt($curl, CURLOPT_USERAGENT, TOGGL_AGENT);
-  curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, FALSE);
-  curl_setopt($curl, CURLOPT_USERPWD, TOGGL_TOKEN . ':api_token');
-  $buffer = curl_exec($curl);
-  curl_close($curl);
+  if ((isset($result['total_count']))
+    && (isset($result['time_entries']))
+    && (isset($result['limit']))
+    // Fail if case redmine forces less than $pager.
+    && ($result['limit'] == $pager)) {
 
-  $json_result = json_decode($buffer, TRUE);
+    $page_count = floor($result['total_count'] / $pager) + 1;
 
-  if (isset($json_result['total_grand'])) {
-    $h = $json_result['total_grand'] / 1000 / 60 / 60; // ms => h
-    return $h;
+    if ($page_count == 1) {
+      $hours = redmine_entries_to_hours($result['time_entries']);
+    }
+    else {
+      $hours = redmine_entries_to_hours($result['time_entries']);
+      // We need to start flipping pages.
+      for ($page = 2; $page <= $page_count; $page++) {
+        $hours = $hours + redmine_entries_to_hours(redmine_get_time_entries($start, $end, $pager, ($page - 1) * $pager)['time_entries']);
+      }
+    }
+
+    return $hours;
   }
   else {
     return 0;
   }
 }
 
-function toggl_m($first, $last) {
-  if ($h = toggl_h($first, $last)) {
-    $rate_currency = $h * HOUR_RATE;
+function redmine_get_time_entries($start, $end, $pager = 1, $offset = 0) {
+  $url = "https://" . REDMINE_API_KEY . ":DefinitelyNotMyPassword@" . REDMINE_DOMAIN . "/time_entries.json?limit=" . $pager . "&offset=" . $offset . "&user_id=" . REDMINE_USERID . "&spent_on=><" . $start . "|" . $end;
+
+  $curl = curl_init();
+  curl_setopt($curl, CURLOPT_URL, $url);
+  curl_setopt($curl, CURLOPT_HTTPGET, TRUE);
+  curl_setopt($curl, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+  curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 2);
+  curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+  curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, FALSE);
+  $buffer = curl_exec($curl);
+  curl_close($curl);
+
+  $json_result = json_decode($buffer, TRUE);
+
+  if ((isset($json_result['total_count'])) && (isset($json_result['time_entries']))) {
+    return $json_result;
+  }
+  else {
+    return NULL;
+  }
+}
+
+function redmine_entries_to_hours($entries) {
+  $hours = 0;
+  foreach ($entries as $index => $entry) {
+    $hours = $hours + $entry['hours'];
+  }
+
+  return $hours;
+}
+
+function redmine_get_money($start, $end) {
+  if ($hours = redmine_get_hours($start, $end)) {
+    $rate_currency = $hours * HOUR_RATE;
     return convert($rate_currency);
   }
   else {
-    return "Fail";
+    return 0;
   }
 }
 
@@ -91,7 +124,7 @@ function number_of_working_days($from, $to) {
   $holidayDays = [
     '*-12-25',
     '*-01-01',
-    '2013-12-23'
+    '2013-12-23',
   ]; # variable and fixed holidays
 
   $from = new DateTime($from);
@@ -121,7 +154,7 @@ function convert($rate_currency) {
     return $rate_currency;
   }
 
-  $rate = file_get_contents('https://api.fixer.io/latest?base=' . HOUR_RATE_CURRENCY . '&symbols=' . FINAL_CURRENCY );
+  $rate = file_get_contents('https://api.fixer.io/latest?base=' . HOUR_RATE_CURRENCY . '&symbols=' . FINAL_CURRENCY);
   $rate = json_decode($rate);
   $rate = $rate->rates->{FINAL_CURRENCY};
 
