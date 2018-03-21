@@ -1,0 +1,4 @@
+name: redmine-motivator
+recipe: lemp
+config:
+  webroot: .
